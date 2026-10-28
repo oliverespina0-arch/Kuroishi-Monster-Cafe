@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kuroishi Monster Cafe</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Nunito:wght@700;800;900&display=swap');
+
+    body {
+      font-family: 'Fredoka', 'Nunito', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      overflow-x: hidden;
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    }
+
+    /* Glassmorphism main container */
+    .glass-box {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Speech Bubbles */
+    .speech-bubble {
+      position: relative;
+      background: #ffffff;
+      border-radius: 1.5rem;
+      border: 4px solid #334155;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    }
+
+    .speech-bubble-left::after {
+      content: '';
+      position: absolute;
+      left: -20px;
+      top: 40%;
+      border-width: 12px 20px 12px 0;
+      border-style: solid;
+      border-color: transparent #334155 transparent transparent;
+      display: block;
+      width: 0;
+    }
+
+    .speech-bubble-right::after {
+      content: '';
+      position: absolute;
+      right: -20px;
+      top: 40%;
+      border-width: 12px 0 12px 20px;
+      border-style: solid;
+      border-color: transparent transparent transparent #334155;
+      display: block;
+      width: 0;
+    }
+
+    /* Target word highlight requirement */
+    .highlight-text {
+      color: #ef4444;
+      font-weight: 800;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+      background-color: #fef2f2;
+      padding: 2px 8px;
+      border-radius: 8px;
+      border: 2px dashed #fca5a5;
+    }
+
+    /* Animations */
+    @keyframes waving {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-8deg); }
+      75% { transform: rotate(8deg); }
+    }
+
+    .animate-waving {
+      animation: waving 2s infinite ease-in-out;
+    }
+
+    @keyframes munching {
+      0% { transform: scale(1); }
+      25% { transform: scale(1.18) rotate(3deg); }
+      50% { transform: scale(0.92) rotate(-3deg); }
+      75% { transform: scale(1.12) rotate(2deg); }
+      100% { transform: scale(1); }
+    }
+
+    .munching {
+      animation: munching 0.5s ease-in-out;
+    }
+
+    @keyframes bounce-fun {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-25px) scale(1.05); }
+    }
+
+    .animate-bounce-fun {
+      animation: bounce-fun 0.6s ease-in-out 3;
+    }
+
+    @keyframes shake-fail {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-15px) rotate(-4deg); }
+      40%, 80% { transform: translateX(15px) rotate(4deg); }
+    }
+
+    .animate-shake-fail {
+      animation: shake-fail 0.5s ease-in-out 2;
+    }
+
+    @keyframes float-up {
+      0% { opacity: 1; transform: translateY(0) scale(1); }
+      100% { opacity: 0; transform: translateY(-80px) scale(1.4); }
+    }
+
+    .floating-effect {
+      animation: float-up 1.2s ease-out forwards;
+    }
+
+    /* Flying food element styling */
+    .flying-food {
+      position: fixed;
+      z-index: 100;
+      transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-3 sm:p-6 text-slate-800">
+
+  <!-- AUDIO ELEMENTS -->
+  <audio id="bgm" loop></audio>
+  <audio id="sound-munch"></audio>
+  <audio id="sound-burp"></audio>
+  <audio id="sound-happy"></audio>
+  <audio id="sound-sad"></audio>
+
+  <!-- Audio Toggle Control -->
+  <button id="audio-toggle-btn" onclick="toggleAudio()" class="fixed top-4 right-4 z-50 bg-white/90 hover:bg-white text-slate-800 font-bold px-4 py-2 rounded-full shadow-lg border-2 border-slate-300 flex items-center space-x-2 transition transform active:scale-95">
+    <i id="audio-icon" class="fas fa-volume-up text-amber-500 text-xl"></i>
+    <span id="audio-text" class="text-sm">Sound ON</span>
+  </button>
+
+  <!-- Top Bar: Home Button & Total Score -->
+  <div class="fixed top-4 left-4 z-40 flex items-center space-x-3">
+    <!-- Home Button -->
+    <button id="home-btn" onclick="goHome()" class="bg-white/90 hover:bg-white text-slate-800 font-black px-4 py-2.5 rounded-2xl shadow-lg border-2 border-amber-300 flex items-center space-x-2 transition transform active:scale-95">
+      <i class="fas fa-home text-amber-600 text-xl"></i>
+      <span class="hidden sm:inline text-amber-900 font-extrabold">Home</span>
+    </button>
+
+    <!-- Total Score Bar -->
+    <div class="bg-white/90 backdrop-blur-md px-5 py-2.5 rounded-2xl shadow-lg border-2 border-amber-300 flex items-center space-x-3">
+      <span class="text-2xl">💎</span>
+      <span id="total-diamonds" class="text-2xl font-black text-amber-600">0</span>
+      <span class="text-slate-400 font-bold">|</span>
+      <span class="text-2xl">💩</span>
+      <span id="total-poops" class="text-2xl font-black text-amber-800">0</span>
+    </div>
+  </div>
+
+  <!-- START OVERLAY SCREEN -->
+  <div id="start-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
+    <div class="glass-box rounded-3xl p-6 sm:p-10 max-w-lg w-full text-center flex flex-col items-center space-y-6 shadow-2xl border-4 border-amber-300">
+      <h1 class="text-3xl sm:text-5xl font-black text-amber-600 drop-shadow-md tracking-wide">
+        Kuroishi Monster Cafe 👹🍔
+      </h1>
+      <p class="text-lg sm:text-xl font-bold text-slate-700">
+        Welcome! Practice ordering food in English!
+      </p>
+
+      <!-- Clerk Preview (SVG) -->
+      <div id="start-clerk-svg" class="w-36 h-36 sm:w-44 sm:h-44 animate-waving"></div>
+
+      <button id="start-btn" onclick="startGame()" class="w-full py-4 px-8 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-2xl sm:text-3xl rounded-2xl shadow-xl transform hover:scale-105 active:scale-95 transition-all duration-200 border-b-4 border-teal-800">
+        Come in, please! 🚪✨
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN GAME CONTAINER -->
+  <main class="w-full max-w-6xl glass-box rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col justify-between my-auto min-h-[85vh] relative overflow-hidden">
+    
+    <!-- Top Bar Title & Round Status -->
+    <header class="flex justify-between items-center mb-3 border-b-2 border-slate-200/80 pb-2">
+      <div class="flex items-center space-x-2">
+        <span class="text-2xl">☕</span>
+        <h2 class="text-xl sm:text-2xl font-black text-slate-800 tracking-wide">Kuroishi Monster Cafe</h2>
+      </div>
+      <div id="order-progress" class="text-base sm:text-lg font-extrabold text-amber-600 bg-amber-100/80 px-4 py-1 rounded-full border border-amber-300">
+        Items Eaten: <span id="eaten-count" class="text-2xl text-amber-700">0</span> / 3
+      </div>
+    </header>
+
+    <!-- 3-COLUMN MAIN STAGE -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 my-2 items-center flex-grow">
+      
+      <!-- LEFT COLUMN: Monster Customer (4 cols) -->
+      <div class="md:col-span-4 flex flex-col items-center justify-center relative min-h-[240px] sm:min-h-[280px]">
+        <div id="monster-container" class="relative flex flex-col items-center justify-center w-full">
+          <!-- Monster Name Badge -->
+          <div id="monster-name" class="mb-2 bg-purple-600 text-white font-black text-sm sm:text-base px-3 py-1 rounded-full shadow-md">
+            Friendly Monster
+          </div>
+          
+          <!-- SVG Monster Graphic Container -->
+          <div id="monster-svg-display" class="w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center transition-all duration-300 drop-shadow-2xl"></div>
+
+          <!-- Floating Reaction Particles Container -->
+          <div id="particle-layer" class="absolute inset-0 pointer-events-none flex items-center justify-center"></div>
+        </div>
+      </div>
+
+      <!-- MIDDLE COLUMN: Speech Bubble & Sentence Slots (5 cols) -->
+      <div class="md:col-span-5 flex flex-col items-center justify-center space-y-3">
+        <!-- Monster Speech Bubble -->
+        <div class="speech-bubble speech-bubble-left w-full p-4 text-center bg-white">
+          <p id="monster-bubble-text" class="text-lg sm:text-xl font-bold text-slate-800 leading-snug">
+            "I'm hungry! Choose any 3 foods for me!"
+          </p>
+        </div>
+
+        <!-- Target Sentence Completion Slot Board -->
+        <div class="w-full bg-amber-500/10 border-2 border-amber-400/50 rounded-2xl p-3 sm:p-4 text-center shadow-inner">
+          <p class="text-xs sm:text-sm font-extrabold text-amber-800 uppercase tracking-wider mb-1">
+            🎯 Target Sentence
+          </p>
+          <div id="sentence-box" class="text-xl sm:text-2xl font-black text-slate-800 min-h-[50px] flex items-center justify-center flex-wrap gap-2">
+            <span>I’d like</span>
+            <span id="target-food-slot" class="highlight-text">choose a food</span>.
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Cashier / Clerk (3 cols) -->
+      <div class="md:col-span-3 flex flex-col items-center justify-center relative min-h-[200px]">
+        <!-- Cashier Speech Bubble -->
+        <div class="speech-bubble speech-bubble-right w-full p-3 mb-2 text-center bg-sky-50 border-sky-300">
+          <p class="text-sm sm:text-base font-extrabold text-sky-900">
+            "What would you like?" 💁‍♀️
+          </p>
+        </div>
+        <!-- Clerk Graphic SVG -->
+        <div id="stage-clerk-svg" class="w-32 h-32 sm:w-40 sm:h-40 flex items-center justify-center transition-all duration-300 drop-shadow-xl"></div>
+      </div>
+
+    </div>
+
+    <!-- BOTTOM INTERACTIVE AREA: Food Menu & Minigame Choice -->
+    <div id="interactive-area" class="mt-2 border-t-2 border-slate-200/80 pt-3">
+      
+      <!-- MENU SELECTION (10 Items Grid) -->
+      <div id="food-menu-section" class="w-full">
+        <p class="text-sm font-black text-slate-600 mb-2 text-center sm:text-left">
+          👇 Click a food item to serve the monster:
+        </p>
+        <div id="food-buttons-grid" class="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3">
+          <!-- 10 Food items generated by JS -->
+        </div>
+      </div>
+
+      <!-- THE BOX CHOICE (Risk / Reward Minigame - hidden until full) -->
+      <div id="box-choice-section" class="hidden w-full text-center bg-gradient-to-r from-purple-100 via-pink-100 to-amber-100 border-4 border-purple-300 rounded-2xl p-4 sm:p-6 shadow-xl">
+        <h3 class="text-2xl sm:text-3xl font-black text-purple-900 mb-2">
+          BURP! 💥 Monster is full! Choose your tip!
+        </h3>
+        <p class="text-base sm:text-lg font-bold text-slate-700 mb-4">
+          Safe Diamond or Risk the Mystery Box?
+        </p>
+
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8">
+          <!-- Safe Option -->
+          <button id="safe-choice-btn" onclick="chooseOption('safe')" class="w-full sm:w-1/2 p-4 bg-white hover:bg-emerald-50 border-4 border-emerald-400 rounded-2xl shadow-lg transform hover:scale-105 active:scale-95 transition flex flex-col items-center">
+            <span class="text-5xl sm:text-6xl mb-2 animate-bounce">💎</span>
+            <span class="text-xl sm:text-2xl font-black text-emerald-700">Guaranteed Diamonds</span>
+            <span class="text-sm font-bold text-slate-500">+2 Diamonds (Safe)</span>
+          </button>
+
+          <!-- Mystery Box Option -->
+          <button id="mystery-choice-btn" onclick="chooseOption('mystery')" class="w-full sm:w-1/2 p-4 bg-white hover:bg-purple-50 border-4 border-purple-400 rounded-2xl shadow-lg transform hover:scale-105 active:scale-95 transition flex flex-col items-center">
+            <span class="text-5xl sm:text-6xl mb-2 animate-pulse">🎁</span>
+            <span class="text-xl sm:text-2xl font-black text-purple-700">Mystery Box</span>
+            <span class="text-sm font-bold text-slate-500">Big Tip (5, 7, 10💎) OR Prank (3💩)!</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- NEXT CUSTOMER BUTTON -->
+      <div id="next-customer-section" class="hidden w-full text-center mt-3">
+        <button id="next-btn" onclick="nextCustomer()" class="w-full sm:w-2/3 py-4 px-8 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-black text-2xl rounded-2xl shadow-xl transform hover:scale-105 active:scale-95 transition border-b-4 border-indigo-900">
+          Next Customer ➡️ 👹
+        </button>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    /* GAME STATE */
+    const gameState = {
+      totalDiamonds: 0,
+      totalPoops: 0,
+      currentMonsterIndex: 0,
+      chosenFoods: [],
+      isAnimating: false,
+      isRoundFinished: false,
+      isAudioMuted: false
+    };
+
+    /* 10 FOOD MENU ITEMS */
+    const MENU_ITEMS = [
+      { id: 'ramen', name: 'Ramen', label: 'ramen', icon: '🍜' },
+      { id: 'curry', name: 'Curry', label: 'curry', icon: '🍛' },
+      { id: 'sushi', name: 'Sushi', label: 'sushi', icon: '🍣' },
+      { id: 'burger', name: 'Burger', label: 'a burger', icon: '🍔' },
+      { id: 'pizza', name: 'Pizza', label: 'pizza', icon: '🍕' },
+      { id: 'donut', name: 'Donut', label: 'a donut', icon: '🍩' },
+      { id: 'fries', name: 'Fries', label: 'french fries', icon: '🍟' },
+      { id: 'icecream', name: 'Ice Cream', label: 'ice cream', icon: '🍦' },
+      { id: 'cake', name: 'Cake', label: 'a piece of cake', icon: '🍰' },
+      { id: 'bento', name: 'Bento', label: 'a bento box', icon: '🍱' }
+    ];
+
+    /* INLINE SVG GRAPHICS (100% Guaranteed to work on school tablets!) */
+    const SVG_CLERK = `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="35" r="22" fill="#fcd34d"/><circle cx="43" cy="32" r="3" fill="#1e293b"/><circle cx="57" cy="32" r="3" fill="#1e293b"/><path d="M 44 42 Q 50 48 56 42" stroke="#1e293b" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M 28 25 Q 50 8 72 25 Z" fill="#0284c7"/><path d="M 20 90 Q 20 55 50 55 Q 80 55 80 90 Z" fill="#0284c7"/><path d="M 40 55 L 50 70 L 60 55 Z" fill="#ffffff"/></svg>`;
+
+    const MONSTER_SVGS = {
+      red: {
+        normal: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="55" r="38" fill="#ef4444"/><circle cx="35" cy="45" r="10" fill="#ffffff"/><circle cx="65" cy="45" r="10" fill="#ffffff"/><circle cx="35" cy="45" r="5" fill="#000000"/><circle cx="65" cy="45" r="5" fill="#000000"/><path d="M 35 70 Q 50 85 65 70" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M 30 18 L 38 30 L 22 28 Z" fill="#fcd34d"/><path d="M 70 18 L 62 30 L 78 28 Z" fill="#fcd34d"/></svg>`,
+        happy: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="55" r="38" fill="#ef4444"/><path d="M 28 45 Q 35 35 42 45" stroke="#ffffff" stroke-width="4" fill="none"/><path d="M 58 45 Q 65 35 72 45" stroke="#ffffff" stroke-width="4" fill="none"/><circle cx="50" cy="68" r="16" fill="#7f1d1d"/><path d="M 30 18 L 38 30 L 22 28 Z" fill="#fcd34d"/><path d="M 70 18 L 62 30 L 78 28 Z" fill="#fcd34d"/></svg>`,
+        sad: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="55" r="38" fill="#ef4444"/><circle cx="35" cy="45" r="8" fill="#ffffff"/><circle cx="65" cy="45" r="8" fill="#ffffff"/><circle cx="35" cy="47" r="4" fill="#000000"/><circle cx="65" cy="47" r="4" fill="#000000"/><path d="M 35 75 Q 50 60 65 75" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`
+      },
+      blue: {
+        normal: `<svg viewBox="0 0 100 100" class="w-full h-full"><rect x="15" y="20" width="70" height="70" rx="25" fill="#3b82f6"/><circle cx="50" cy="40" r="14" fill="#ffffff"/><circle cx="50" cy="40" r="7" fill="#1e1b4b"/><path d="M 30 68 Q 50 82 70 68" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/><ellipse cx="15" cy="55" rx="6" ry="12" fill="#2563eb"/><ellipse cx="85" cy="55" rx="6" ry="12" fill="#2563eb"/></svg>`,
+        happy: `<svg viewBox="0 0 100 100" class="w-full h-full"><rect x="15" y="20" width="70" height="70" rx="25" fill="#3b82f6"/><path d="M 40 40 Q 50 28 60 40" stroke="#ffffff" stroke-width="4" fill="none"/><path d="M 28 65 C 40 85, 60 85, 72 65 Z" fill="#ffffff"/></svg>`,
+        sad: `<svg viewBox="0 0 100 100" class="w-full h-full"><rect x="15" y="20" width="70" height="70" rx="25" fill="#3b82f6"/><circle cx="50" cy="42" r="12" fill="#ffffff"/><circle cx="50" cy="44" r="6" fill="#1e1b4b"/><path d="M 35 72 Q 50 60 65 72" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`
+      },
+      green: {
+        normal: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 50 10 L 90 90 L 10 90 Z" fill="#10b981"/><circle cx="38" cy="55" r="8" fill="#ffffff"/><circle cx="62" cy="55" r="8" fill="#ffffff"/><circle cx="38" cy="55" r="4" fill="#000000"/><circle cx="62" cy="55" r="4" fill="#000000"/><path d="M 35 78 Q 50 88 65 78" stroke="#ffffff" stroke-width="4" fill="none"/></svg>`,
+        happy: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 50 10 L 90 90 L 10 90 Z" fill="#10b981"/><path d="M 30 55 Q 38 45 46 55" stroke="#ffffff" stroke-width="3" fill="none"/><path d="M 54 55 Q 62 45 70 55" stroke="#ffffff" stroke-width="3" fill="none"/><circle cx="50" cy="76" r="10" fill="#064e3b"/></svg>`,
+        sad: `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 50 10 L 90 90 L 10 90 Z" fill="#10b981"/><circle cx="38" cy="58" r="7" fill="#ffffff"/><circle cx="62" cy="58" r="7" fill="#ffffff"/><path d="M 38 78 Q 50 68 62 78" stroke="#ffffff" stroke-width="4" fill="none"/></svg>`
+      },
+      purple: {
+        normal: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="40" fill="#a855f7"/><circle cx="28" cy="40" r="7" fill="#ffffff"/><circle cx="50" cy="35" r="9" fill="#ffffff"/><circle cx="72" cy="40" r="7" fill="#ffffff"/><circle cx="28" cy="40" r="3" fill="#000000"/><circle cx="50" cy="35" r="4" fill="#000000"/><circle cx="72" cy="40" r="3" fill="#000000"/><path d="M 32 68 Q 50 82 68 68" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`,
+        happy: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="40" fill="#a855f7"/><path d="M 22 40 Q 28 32 34 40" stroke="#ffffff" stroke-width="3" fill="none"/><path d="M 42 35 Q 50 25 58 35" stroke="#ffffff" stroke-width="3" fill="none"/><path d="M 66 40 Q 72 32 78 40" stroke="#ffffff" stroke-width="3" fill="none"/><path d="M 30 65 C 40 85, 60 85, 70 65 Z" fill="#ffffff"/></svg>`,
+        sad: `<svg viewBox="0 0 100 100" class="w-full h-full"><circle cx="50" cy="50" r="40" fill="#a855f7"/><circle cx="28" cy="42" r="6" fill="#ffffff"/><circle cx="50" cy="38" r="8" fill="#ffffff"/><circle cx="72" cy="42" r="6" fill="#ffffff"/><path d="M 35 74 Q 50 62 65 74" stroke="#ffffff" stroke-width="5" fill="none" stroke-linecap="round"/></svg>`
+      }
+    };
+
+    const MONSTERS = [
+      { id: 'red', name: 'Aka-chan (Red)', color: 'bg-red-500' },
+      { id: 'blue', name: 'Ao-kun (Blue)', color: 'bg-blue-500' },
+      { id: 'green', name: 'Midori (Green)', color: 'bg-emerald-500' },
+      { id: 'purple', name: 'Murasaki (Purple)', color: 'bg-purple-500' }
+    ];
+
+    /* SYNTHETIC SOUND GENERATOR FOR TABLETS */
+    function playSyntheticSound(type) {
+      if (gameState.isAudioMuted) return;
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        if (type === 'munch') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(150, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.1);
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.15);
+        } else if (type === 'burp') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(110, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(65, ctx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.4, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.4);
+        } else if (type === 'happy') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(440, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.3);
+        } else if (type === 'sad') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, ctx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(110, ctx.currentTime + 0.4);
+          gain.gain.setValueAtTime(0.3, ctx.currentTime);
+          gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.4);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.4);
+        }
+      } catch (e) {
+        console.warn('Web Audio API disabled:', e);
+      }
+    }
+
+    function toggleAudio() {
+      gameState.isAudioMuted = !gameState.isAudioMuted;
+      const icon = document.getElementById('audio-icon');
+      const text = document.getElementById('audio-text');
+
+      if (gameState.isAudioMuted) {
+        icon.className = 'fas fa-volume-mute text-slate-400 text-xl';
+        text.innerText = 'Sound OFF';
+      } else {
+        icon.className = 'fas fa-volume-up text-amber-500 text-xl';
+        text.innerText = 'Sound ON';
+      }
+    }
+
+    /* GAME FLOW CONTROLLERS */
+    function startGame() {
+      document.getElementById('start-screen').classList.add('hidden');
+      renderFoodMenu();
+      initRound();
+    }
+
+    function goHome() {
+      document.getElementById('start-screen').classList.remove('hidden');
+    }
+
+    function renderFoodMenu() {
+      const grid = document.getElementById('food-buttons-grid');
+      grid.innerHTML = '';
+
+      MENU_ITEMS.forEach(food => {
+        const btn = document.createElement('button');
+        btn.className = `food-item-btn p-3 bg-white hover:bg-amber-50 border-3 border-amber-300 hover:border-amber-500 rounded-2xl shadow-md transform hover:-translate-y-1 active:scale-95 transition flex flex-col items-center justify-center space-y-1`;
+        btn.onclick = (e) => handleFoodClick(food, btn, e);
+
+        btn.innerHTML = `
+          <span class="text-4xl sm:text-5xl pointer-events-none">${food.icon}</span>
+          <span class="text-xs sm:text-sm font-black text-slate-700 capitalize pointer-events-none text-center">${food.name}</span>
+        `;
+        grid.appendChild(btn);
+      });
+    }
+
+    function initRound() {
+      gameState.isAnimating = false;
+      gameState.isRoundFinished = false;
+      gameState.chosenFoods = [];
+
+      let newMonsterIndex;
+      do {
+        newMonsterIndex = Math.floor(Math.random() * MONSTERS.length);
+      } while (newMonsterIndex === gameState.currentMonsterIndex && MONSTERS.length > 1);
+      
+      gameState.currentMonsterIndex = newMonsterIndex;
+      const monster = MONSTERS[gameState.currentMonsterIndex];
+
+      const monsterDisplay = document.getElementById('monster-svg-display');
+      monsterDisplay.className = 'w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center transition-all duration-300 drop-shadow-2xl';
+      monsterDisplay.innerHTML = SVG_CLERK;
+      monsterDisplay.innerHTML = MONSTER_SVGS[monster.id].normal;
+      
+      const monsterBadge = document.getElementById('monster-name');
+      monsterBadge.innerText = monster.name;
+      monsterBadge.className = `mb-2 ${monster.color} text-white font-black text-sm sm:text-base px-3 py-1 rounded-full shadow-md`;
+
+      document.getElementById('eaten-count').innerText = '0';
+      document.getElementById('food-menu-section').classList.remove('hidden');
+      document.getElementById('box-choice-section').classList.add('hidden');
+      document.getElementById('next-customer-section').classList.add('hidden');
+
+      updateSpeechAndTarget();
+    }
+
+    function updateSpeechAndTarget(lastFood) {
+      const monsterBubble = document.getElementById('monster-bubble-text');
+      const targetSlot = document.getElementById('target-food-slot');
+
+      if (gameState.chosenFoods.length === 0) {
+        monsterBubble.innerHTML = `I'm hungry! Choose any 3 foods for me! 😋`;
+        targetSlot.innerHTML = `<span class="highlight-text">choose a food</span>`;
+      } else if (gameState.chosenFoods.length < 3) {
+        const orderListText = gameState.chosenFoods.map(f => `<b>${f.name}</b>`).join(', ');
+        monsterBubble.innerHTML = `Yum! I've eaten: ${orderListText}. Give me ${3 - gameState.chosenFoods.length} more! 😋`;
+        targetSlot.innerHTML = `<span class="highlight-text">${lastFood.label}</span>`;
+      } else {
+        monsterBubble.innerHTML = `BURP! I am completely full! Thank you! 😋✨`;
+        targetSlot.innerHTML = `<span class="text-emerald-600 font-extrabold">All 3 foods eaten!</span>`;
+      }
+    }
+
+    function handleFoodClick(selectedFood, buttonEl, event) {
+      if (gameState.isAnimating || gameState.isRoundFinished || gameState.chosenFoods.length >= 3) return;
+
+      gameState.isAnimating = true;
+
+      flyFoodToMonster(selectedFood, buttonEl, () => {
+        playSyntheticSound('munch');
+
+        const monsterDisplay = document.getElementById('monster-svg-display');
+        monsterDisplay.classList.add('munching');
+
+        showFloatingParticle('😋 YUM!', 'text-amber-500 font-extrabold text-2xl');
+
+        setTimeout(() => {
+          monsterDisplay.classList.remove('munching');
+          gameState.chosenFoods.push(selectedFood);
+          document.getElementById('eaten-count').innerText = gameState.chosenFoods.length;
+
+          updateSpeechAndTarget(selectedFood);
+
+          if (gameState.chosenFoods.length < 3) {
+            gameState.isAnimating = false;
+          } else {
+            triggerBurpPhase();
+          }
+        }, 500);
+      });
+    }
+
+    function flyFoodToMonster(food, sourceEl, onComplete) {
+      const sourceRect = sourceEl.getBoundingClientRect();
+      const monsterTarget = document.getElementById('monster-svg-display');
+      const monsterRect = monsterTarget.getBoundingClientRect();
+
+      const flyer = document.createElement('div');
+      flyer.className = 'flying-food w-16 h-16 rounded-full border-2 border-amber-400 bg-white shadow-2xl flex items-center justify-center text-4xl';
+      flyer.innerText = food.icon;
+      flyer.style.left = `${sourceRect.left + sourceRect.width / 2}px`;
+      flyer.style.top = `${sourceRect.top + sourceRect.height / 2}px`;
+
+      document.body.appendChild(flyer);
+
+      const targetX = monsterRect.left + monsterRect.width / 2;
+      const targetY = monsterRect.top + monsterRect.height * 0.4;
+
+      requestAnimationFrame(() => {
+        flyer.style.left = `${targetX}px`;
+        flyer.style.top = `${targetY}px`;
+        flyer.style.transform = `translate(-50%, -50%) scale(0.3) rotate(360deg)`;
+        flyer.style.opacity = '0.3';
+      });
+
+      setTimeout(() => {
+        flyer.remove();
+        if (onComplete) onComplete();
+      }, 600);
+    }
+
+    function triggerBurpPhase() {
+      playSyntheticSound('burp');
+      showFloatingParticle('💥 BURP! 💨', 'text-amber-700 font-black text-4xl');
+
+      updateSpeechAndTarget();
+
+      document.getElementById('food-menu-section').classList.add('hidden');
+      document.getElementById('box-choice-section').classList.remove('hidden');
+      gameState.isAnimating = false;
+    }
+
+    function showFloatingParticle(text, cssClass) {
+      const layer = document.getElementById('particle-layer');
+      const particle = document.createElement('div');
+      particle.className = `absolute pointer-events-none floating-effect ${cssClass}`;
+      particle.innerText = text;
+      layer.appendChild(particle);
+
+      setTimeout(() => particle.remove(), 1200);
+    }
+
+    function chooseOption(type) {
+      if (gameState.isRoundFinished || gameState.isAnimating) return;
+      gameState.isAnimating = true;
+      gameState.isRoundFinished = true;
+
+      let isSuccess = false;
+      let outcomeMessage = '';
+
+      if (type === 'safe') {
+        gameState.totalDiamonds += 2;
+        isSuccess = true;
+        outcomeMessage = `You chose Safe! Got 2 Diamonds! 💎💎`;
+      } else {
+        const mysteryOutcomes = [
+          { type: 'tip', amount: 5 },
+          { type: 'tip', amount: 7 },
+          { type: 'tip', amount: 10 },
+          { type: 'prank', amount: 3 }
+        ];
+
+        const result = mysteryOutcomes[Math.floor(Math.random() * mysteryOutcomes.length)];
+
+        if (result.type === 'tip') {
+          gameState.totalDiamonds += result.amount;
+          isSuccess = true;
+          outcomeMessage = `BIG TIP! You won ${result.amount} Diamonds! 💎✨`;
+        } else {
+          gameState.totalPoops += result.amount;
+          isSuccess = false;
+          outcomeMessage = `OH NO! PRANK! You got 3 Poops! 💩💩💩`;
+        }
+      }
+
+      document.getElementById('total-diamonds').innerText = gameState.totalDiamonds;
+      document.getElementById('total-poops').innerText = gameState.totalPoops;
+
+      handleOutcomeReaction(isSuccess, outcomeMessage);
+    }
+
+    function handleOutcomeReaction(isSuccess, messageText) {
+      const monsterDisplay = document.getElementById('monster-svg-display');
+      const clerkDisplay = document.getElementById('stage-clerk-svg');
+      const monsterBubble = document.getElementById('monster-bubble-text');
+      const currentMonster = MONSTERS[gameState.currentMonsterIndex];
+
+      monsterBubble.innerHTML = messageText;
+
+      if (isSuccess) {
+        playSyntheticSound('happy');
+        monsterDisplay.innerHTML = MONSTER_SVGS[currentMonster.id].happy;
+        monsterDisplay.classList.add('animate-bounce-fun');
+        clerkDisplay.classList.add('animate-bounce-fun');
+        showFloatingParticle('🎉 GREAT JOB! 🎉', 'text-emerald-600 font-black text-3xl');
+      } else {
+        playSyntheticSound('sad');
+        monsterDisplay.innerHTML = MONSTER_SVGS[currentMonster.id].sad;
+        monsterDisplay.classList.add('animate-shake-fail');
+        clerkDisplay.classList.add('animate-shake-fail');
+        showFloatingParticle('💩 PRANKED! 💩', 'text-amber-800 font-black text-3xl');
+      }
+
+      setTimeout(() => {
+        document.getElementById('next-customer-section').classList.remove('hidden');
+        gameState.isAnimating = false;
+      }, 1000);
+    }
+
+    function nextCustomer() {
+      const monsterDisplay = document.getElementById('monster-svg-display');
+      const clerkDisplay = document.getElementById('stage-clerk-svg');
+      monsterDisplay.className = 'w-48 h-48 sm:w-56 sm:h-56 flex items-center justify-center transition-all duration-300 drop-shadow-2xl';
+      clerkDisplay.className = 'w-32 h-32 sm:w-40 sm:h-40 flex items-center justify-center transition-all duration-300 drop-shadow-xl';
+
+      initRound();
+    }
+
+    // Initialize SVG Graphics on load
+    window.onload = function() {
+      document.getElementById('start-clerk-svg').innerHTML = SVG_CLERK;
+      document.getElementById('stage-clerk-svg').innerHTML = SVG_CLERK;
+    };
+  </script>
+</body>
+</html>
